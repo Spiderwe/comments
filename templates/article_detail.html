@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block css %}
+  <style>
+    #div_digg {
+      float: right;
+      margin-bottom: 10px;
+      margin-right: 30px;
+      font-size: 12px;
+      width: 128px;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .diggit {
+      float: left;
+      width: 46px;
+      height: 52px;
+      background: url(/static/img/up.gif) no-repeat;
+      text-align: center;
+      cursor: pointer;
+      margin-top: 2px;
+      padding-top: 5px;
+    }
+
+    .buryit {
+      float: right;
+      margin-left: 20px;
+      width: 46px;
+      height: 52px;
+      background: url(/static/img/down.gif) no-repeat;
+      text-align: center;
+      cursor: pointer;
+      margin-top: 2px;
+      padding-top: 5px;
+    }
+
+    #div_digg .burynum {
+      line-height: 1.5em !important;
+    }
+
+    .clear {
+      clear: both;
+    }
+
+    .diggword {
+      margin-top: 5px;
+      margin-left: 0;
+      font-size: 12px;
+      color: red;
+    }
+
+    .href {
+      color: #9878ff;
+    }
+
+  </style>
+
+
+{% endblock %}
+
+{% block content %}
+  <h2>{{ article_obj.title }}</h2>
+  <p>{{ article_obj.content|safe }}</p>
+
+  {#  评论列表展示开始#}
+  <p>评论列表</p>
+  <hr>
+  <ul class="list-group">
+    {% for comment in comment_list %}
+      {#   #1楼 2019-01-03 15:12 yuzhiboyou#}
+      <li class="list-group-item">
+      <span>#{{ forloop.counter }}楼</span>
+      <span>{{ comment.create_time|date:'Y-m-d' }} {{ comment.user.username }}</span>
+      <span class="pull-right reply" username="{{ comment.user.username }}" pk="{{ comment.pk }}"><a>回复</a></span>
+
+      <div>
+      {% if comment.parent %}
+        <p>@{{ comment.parent.user.username }}</p>
+      {% endif %}
+      {{ comment.content }}
+      </div>
+      </li>
+    {% endfor %}
+  </ul>
+  {#  评论列表结束#}
+
+  {#  评论框开始#}
+  {#  登录之后才看的到评论框#}
+  {% if request.user.is_authenticated %}
+    <div>
+      <p>发表评论</p>
+      <p>
+        昵称：<input type="text" id="tbCommentAuthor" class="author" disabled="disabled" size="50" value="{{ request.user.username }}">
+      </p>
+      <p>评论内容</p>
+      <p><textarea name="" id="id_content" cols="60" rows="10"></textarea></p>
+      <p><input type="button" class="btn btn-primary" value="提交评论" id="id_comment"></p>
+    </div>
+    {#没登录看到的页面#}
+  {% else %}
+    <span class="glyphicon glyphicon-comment"></span>注册用户登录后才能发表评论,请<a href="/login/" class="href">登录</a>或
+    <a href="/register/" class="href">注册</a>
+    <hr>
+  {% endif %}
+  {#  评论框结束#}
+
+{% endblock %}
+
+{% block js %}
+  <script>
+
+      {#提前定义一个存储评论id的变量#}
+      var parentId = null;
+      {#点击提交评论评论#}
+      $('#id_comment').click(function () {
+          //获取根评论内容框的内容
+          var content  = $('#id_content').val();
+          {#获取子评论的内容,判断是否存在父级评论#}
+          if(parentId){
+               // 获取\n所对应的索引值 又由于切片是顾头不顾尾  所以应该在获取的\n索引基础之上再加1
+                var nIndex = content.indexOf('\n') + 1;
+                // 切片获取用户输入的内容
+                content = content.slice(nIndex)  // slice会将索引前面的所有的内容切除
+          }
+          $.ajax({
+              url:'/comment/',
+              type:'post',
+              {#传递给后端的数据#}
+              data:{
+                  'article_id':{{ article_obj.pk }},
+                  'content':content,
+                  'csrfmiddlewaretoken': '{{ csrf_token }}',
+                  'parentId':parentId
+              },
+              {#返回给前端的数据#}
+              success:function (data) {
+                  if(data.code == 100){
+                      //获取当前用户的评论内容加到评论列表中
+                      var conTent = $('#id_content').val();
+                      var username = '{{ request.user.username }}';
+                      //创建评论暂时存放的样式标签，添加到ul标签内，刷新之后才会到评论列表当中
+                       var temp = `
+                         <li class="list-group-item">
+                            <span><span class="glyphicon glyphicon-comment"></span> <a href="/${username}/">${username}</a></span>
+                            <p>${conTent}</p>
+                        </li>
+                        `;
+                      //把上面的标签样式添加到url标签即可
+                      $('.list-group').append(temp);
+                      //提交之后清空评论内容框的内容
+                      $('#id_content').val('');
+                      // 每次发送完毕之后 一定要将parentId清空
+                      parentId = null;
+
+                  }
+              }
+          })
+      });
+
+      //回复按钮触发事件(子评论)
+      $('.reply').click(function () {
+          {#点击回复获取评论的用户名，用来放在内容框中#}
+          var targetUserName = $(this).attr('username');
+          {#获取点击的回复内容的id#}
+          var commentId = $(this).attr('pk');
+          var temp = '@'+targetUserName+'\r\n';
+          //找到评论框将上面的内容放在里面,并且获取焦点
+          $('#id_content').val(temp).focus();
+          //给全局变量赋值
+          parentId = commentId;
+      })
+
+  </script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+

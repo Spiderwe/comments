@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'bootstrap-3.3.7-dist/css/bootstrap.min.css' %}">
+    <script src="{% static 'bootstrap-3.3.7-dist/js/bootstrap.min.js' %}"></script>
+
+</head>
+<body>
+<div class="container">
+  <div class="row">
+
+    <div class="col-md-8 col-md-offset-2">
+      <h2 class="text-center">注册</h2>
+      <form id="myform" novalidate>
+        {% csrf_token %}
+        {% for foo in form_obj %}
+            <div class="form-group">  <!--设置蓝色边框-->
+               {# foo.auto_id获取foo渲染的input框的id值   foo.label是forms组件设置的,输入框的名字#}
+              <label for="{{ foo.auto_id}}">{{ foo.label }}</label>
+              {#输入框#}
+              {{ foo }}
+              <span class="pull-right errors" style="color: red"></span>
+            </div>
+        {% endfor %}
+        <div class="form-group">
+          <label for="myfile">头像
+            {#设置默认头像图片#}
+            <img src="/static/img/default.jpg" alt="" height="80" style="margin-left: 20px" id="img">
+          </label>
+          <input type="file" id="myfile" name='avatar' style="display: none">
+        </div>
+        <input type="button" class="btn btn-primary" value="注册" id="id_submit">
+
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+  //选择头像
+  $('#myfile').change(function () {
+      //获取用户上传的头像，然后替换到img标签中
+      //1.获取用户选择的头像文件对象
+      var fileobj = $(this)[0].files[0];
+      //2.利用内置对象FileReader
+      var fileReader = new FileReader();  //文件阅读器
+      //3.将文件对象交由文件阅读器去取文件内容
+      fileReader.readAsDataURL(fileobj);  //IO操作速度较慢
+      //等待文件阅读器完全读取完文件数据之后再做下面的操作  onload
+      fileReader.onload = function () {
+          //4.找到img标签，修改src属性
+          $('#img').attr('src',fileReader.result)
+      }
+  });
+
+  //注册按钮绑定点击事件
+  $('#id_submit').click(function () {
+      //因为要传普通键值对和文件，所以我们用FormData对象
+      var formData = new FormData();
+      //2.循环添加普通键值对  $('#myform')这个是form表单的id值
+      $.each($('#myform').serializeArray(),function (index,obj) {
+          formData.append(obj.name,obj.value)
+      });
+      //3.手动添加文件
+      formData.append('myfile',$('#myfile')[0].files[0]);
+      //4.发送ajax请求，把数据发送给后台
+      $.ajax({
+          url:'',
+          type:'post',
+          data:formData,  //传递给后端的数据
+          //传文件需要指定两个参数
+          processData:false,
+          contentType:false,
+
+          //回调函数，后端返回给前端的数据data
+          success:function (data) {
+              if (data.code == 100){
+                  location.href = data.url  //注册成功跳转到登录页面
+              }else{
+                  //把错误信息展示到input框下面的span标签中
+                  //手动拼接input的id值
+                  $.each(data.msg,function (index,obj) {
+                        {#console.log(index,obj)#}
+                        var targetId = '#id_' + index;  //index是username,password
+                        $(targetId).next().text(obj[0]).parent().addClass('has-error')
+                    })
+              }
+          }
+      })
+
+  });
+
+  //input框获取焦点
+  $('input').focus(function () {
+      $(this).next().text('').parent().removeClass('has-error')
+  })
+
+
+</script>
+</body>
+</html>
