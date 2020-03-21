@@ -25,7 +25,7 @@ SECRET_KEY = '_4cpc8z)#3=+r_!tgdr5zh2%m53b6@j@8f*3)@nm)s9v0yb$6q'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['wangcccomments.herokuapp.com']
 
 
 # Application definition
@@ -142,4 +142,8 @@ AUTH_USER_MODEL = 'app01.UserInfo'
 
 # 规定 用户上传的所有的静态文件 全部放到media文件夹下(例如头像)
 MEDIA_ROOT = os.path.join(BASE_DIR,'media')
+
+
+import django_heroku
+django_heroku.settings(locals())
 
