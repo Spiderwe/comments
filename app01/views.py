@@ -5,6 +5,7 @@ from django.contrib import auth
 from django.contrib.auth.decorators import login_required
 from django.db.models import F
 from django.utils.safestring import mark_safe
+import dj_database_url
 #登录
 def login(request):
     if request.method == 'POST':
